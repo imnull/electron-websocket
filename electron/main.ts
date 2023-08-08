@@ -19,6 +19,8 @@ const createMainWindow = (port: string | number) => {
         height: 600
     })
 
+    win.webContents.openDevTools()
+
     // win.loadFile(path.resolve(__dirname, '../web/index.html'))
     win.loadURL(`http://localhost:${port}`)
 }

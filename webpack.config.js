@@ -52,6 +52,9 @@ module.exports = (options) => {
                 hash: true,
                 inject: 'body',
             }),
-        ]
+        ],
+        devServer: {
+            port: 9011,
+        }
     }
 }
