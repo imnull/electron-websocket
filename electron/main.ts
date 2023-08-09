@@ -1,17 +1,17 @@
 import { app, BrowserWindow } from 'electron'
-import { spawn } from 'child_process'
 import getPort from 'get-port'
 import path from 'path'
+import { launchServer } from './server'
 
-const launchServer = (port: number | string) => new Promise<void>((resolve, reject) => {
-    const cli = spawn('node', [path.resolve(__dirname, 'server'), port + ''])
-    cli.stderr.on('error', (err) => {
-        reject(err)
-    })
-    cli.stdout.on('data', data => {
-        resolve()
-    })
-})
+// const launchServer = (port: number | string) => new Promise<void>((resolve, reject) => {
+//     const cli = spawn('node', [path.resolve(__dirname, 'server'), port + ''])
+//     cli.stderr.on('error', (err) => {
+//         reject(err)
+//     })
+//     cli.stdout.on('data', data => {
+//         resolve()
+//     })
+// })
 
 const createMainWindow = (port: string | number) => {
     const win = new BrowserWindow({
@@ -25,17 +25,26 @@ const createMainWindow = (port: string | number) => {
     win.loadURL(`http://localhost:${port}`)
 }
 
-app.whenReady().then(() => {
-    getPort().then(port => {
-        console.log(`http://localhost:${port}`)
-        launchServer(port).then(() => {
+const cluster = require('cluster')
+
+if(cluster && cluster.isPrimary) {
+    app.whenReady().then(() => {
+        getPort().then(port => {
+            console.log(`http://localhost:${port}`)
             createMainWindow(port)
-        }, err => {
-            console.log(555555, err)
+            cluster.fork({
+                SERVER_PORT: port,
+            })
         })
     })
-})
-
-app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') app.quit()
-})
+    
+    app.on('window-all-closed', () => {
+        if (process.platform !== 'darwin') app.quit()
+    })
+} else {
+    const {
+        SERVER_PORT = '9010',
+    } = process.env
+    console.log(1111111, SERVER_PORT)
+    launchServer(SERVER_PORT)
+}

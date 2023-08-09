@@ -1,8 +1,10 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 
 const WS_URL = (window as any)['WEBSOCKET_URL'] || 'ws://localhost:9010';
 
 export default () => {
+
+    const [text, setText] = useState('')
 
     useEffect(() => {
         const uri = new URL(WS_URL)
@@ -13,7 +15,11 @@ export default () => {
         ws.onmessage = (ev) => {
             const json = ev.data + ''
             const data = JSON.parse(json)
-            console.log(data)
+            if(data.type === 'hello') {
+                const { text } = data.data
+                console.log(data, text)
+                setText(text)
+            }
         }
         ws.onopen = () => {
             ws.send(JSON.stringify({ type: 'hello', data: { name: 'MK' } }))
@@ -21,5 +27,8 @@ export default () => {
 
     }, [])
 
-    return <h1>Hello World</h1>
+    return <>
+        <h1>Hello World</h1>
+        <h3>{text}</h3>
+    </>
 }

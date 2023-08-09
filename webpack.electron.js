@@ -1,25 +1,17 @@
 const path = require('path')
-const HtmlWebpackPlugin = require('html-webpack-plugin')
 const { CleanWebpackPlugin } = require('clean-webpack-plugin')
 
 module.exports = (options) => {
-
-    const {
-        WEBPACK_SERVE = false,
-        target = 'web',
-    } = options
-
-    const entry = './web/index'
-
     return {
         mode: 'production',
-        target: 'electron-renderer',
+        target: 'electron-main',
         entry: {
             main: './electron/main.ts'
         },
         output: {
             path: path.resolve('electron-dist/electron'),
             filename: '[name].js',
+            libraryTarget: 'commonjs',
         },
         resolve: {
             extensions: ['.ts', '.js'],
@@ -32,7 +24,7 @@ module.exports = (options) => {
                         {
                             loader: 'esbuild-loader',
                         }
-                    ]
+                    ],
                 },
             ]
 
