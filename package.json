@@ -12,7 +12,7 @@
     "make": "electron-forge make",
     "build:web": "webpack",
     "build:server": "tsc electron/server.ts -m commonjs --outDir ./electron-dist/electron --esModuleInterop",
-    "build:electron": "webpack --env target=electron && webpack --config webpack.electron.js && yarn build:server",
+    "build": "webpack --env target=electron && webpack --config webpack.electron.js",
     "dev:web": "webpack serve --open"
   },
   "keywords": [],
