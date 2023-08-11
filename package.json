@@ -1,5 +1,5 @@
 {
-  "name": "electron-websocket",
+  "name": "@imnull/webrtc",
   "version": "1.0.0",
   "description": "",
   "main": "./electron-dist/electron/main.js",

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 
 import { LiveMediaServer, LiveMediaClient } from './signaling'
+import { Messager, Room, User } from "./messager"
 
 export default () => {
 
@@ -9,27 +10,7 @@ export default () => {
     const [video, setVideo] = useState<HTMLVideoElement | null>(null)
     const [canvas, setCanvas] = useState<HTMLCanvasElement | null>(null)
     const [channel, setChannel] = useState('')
-
-    // useEffect(() => {
-    //     if (!video) {
-    //         return
-    //     }
-    //     const uri = new URL(location.href)
-    //     const channel = uri.searchParams.get('channel')
-    //     if (!channel) {
-    //         const stream = video.captureStream(25)
-    //         const server = new LiveMediaServer('abc')
-    //         const ch = server.broadcast(stream)
-    //         const url = `${uri.protocol}//${uri.host}${uri.pathname}?channel=${ch}`
-    //         console.log(1111, url)
-    //     } else {
-    //         setChannel(channel)
-    //     }
-    //     video.oncanplay = ev => {
-    //         console.log(22222, ev)
-    //         // video.play()
-    //     }
-    // }, [video])
+    const [messager, setMessager] = useState<Messager | null>(null)
 
     useEffect(() => {
         if (!canvas) {
@@ -60,8 +41,6 @@ export default () => {
             server.broadcast(stream)
             const server2 = new LiveMediaServer('abcd')
             server2.broadcast(stream)
-            
-
             return () => {
                 clearInterval(h)
             }
@@ -70,23 +49,26 @@ export default () => {
         }
     }, [canvas])
 
-    // useEffect(() => {
-    //     if (!canvas) {
-    //         return
-    //     }
-    //     const ctx = canvas.getContext('2d')!
-    //     ctx.scale(2.5, 2.5)
-    //     const h = setInterval(() => {
-    //         ctx.fillStyle = '#f1f1f1'
-    //         ctx.fillRect(0, 0, canvas.width, canvas.height)
-    //         ctx.fillStyle = '#000'
-    //         ctx.fillText(new Date().toString(), 20, 50)
-    //     }, 100)
-    //     return () => {
-    //         clearInterval(h)
-    //     }
-    // }, [canvas])
-
+    useEffect(() => {
+        const uri = new URL(location.href)
+        const channel = uri.searchParams.get('channel')
+        if (!channel) {
+            const room = new Room('xyz')
+            room.onRequest = msg => {
+                console.log('room.onRequest', msg)
+            }
+            room.onResponse = msg => {
+                console.log('room.onResponse', msg)
+            }
+        } else {
+            const user = new User()
+            const messager = user.connect('xyz')
+            messager.onMessage = msg => {
+                console.log('messager.onMessage', msg)
+            }
+            setMessager(messager)
+        }
+    }, [])
 
     return <>
         <h1>Hello World</h1>
@@ -102,5 +84,28 @@ export default () => {
             }
             client.hi()
         }}>Say Hi</button> : null}
+        <div>
+            {messager ? <>
+                <button onClick={() => {
+                    messager.send('hello')
+                }}>Hello</button>
+                <button onClick={() => {
+                    messager.join().then(() => {
+                        console.log(33333)
+                    })
+                }}>Join</button>
+                <button onClick={() => {
+                    messager.send('list-user')
+                }}>List</button>
+                <button onClick={() => {
+                    messager.say('Hello everybody~!')
+                }}>Say hello to all</button>
+                <button onClick={() => {
+                    messager.exit().then(() => {
+                        console.log(44444)
+                    })
+                }}>Exit</button>
+            </> : null}
+        </div>
     </>
 }
