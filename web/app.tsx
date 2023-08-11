@@ -11,6 +11,7 @@ export default () => {
     const [canvas, setCanvas] = useState<HTMLCanvasElement | null>(null)
     const [channel, setChannel] = useState('')
     const [messager, setMessager] = useState<Messager | null>(null)
+    const [room, setRoom] = useState<Room | null>(null)
 
     useEffect(() => {
         if (!canvas) {
@@ -35,21 +36,24 @@ export default () => {
             //     console.log('Channel:', ch)
             // })
 
-            const stream = canvas.captureStream(10)
+            // const stream = canvas.captureStream(10)
 
-            const server = new LiveMediaServer('abc')
-            server.broadcast(stream)
-            const server2 = new LiveMediaServer('abcd')
-            server2.broadcast(stream)
-            return () => {
-                clearInterval(h)
-            }
+            // const server = new LiveMediaServer('abc')
+            // server.broadcast(stream)
+            // const server2 = new LiveMediaServer('abcd')
+            // server2.broadcast(stream)
+            // return () => {
+            //     clearInterval(h)
+            // }
         } else {
             setChannel(channel)
         }
     }, [canvas])
 
     useEffect(() => {
+        if(!video) {
+            return
+        }
         const uri = new URL(location.href)
         const channel = uri.searchParams.get('channel')
         if (!channel) {
@@ -60,30 +64,30 @@ export default () => {
             room.onResponse = msg => {
                 console.log('room.onResponse', msg)
             }
+            setRoom(room)
         } else {
             const user = new User()
             const messager = user.connect('xyz')
             messager.onMessage = msg => {
                 console.log('messager.onMessage', msg)
             }
+            messager.listenBroadcast(stream => {
+                video.srcObject = stream
+            })
+
+            messager.join()
             setMessager(messager)
         }
-    }, [])
+    }, [video])
 
     return <>
         <h1>Hello World</h1>
         {!channel ? <canvas width={720} height={480} ref={setCanvas} /> : null}
-        {channel ? <button onClick={() => {
-            const client = new LiveMediaClient(channel)
-            client.onTrack = mediaStream => {
-                const video = document.createElement('video')
-                video.style.cssText = 'border:1px solid #aaa;'
-                document.body.appendChild(video)
-                video.srcObject = mediaStream
-                video.play()
-            }
-            client.hi()
+        {canvas && room ? <button onClick={() => {
+            const stream = canvas.captureStream(10)
+            room.broadcast(stream)
         }}>Say Hi</button> : null}
+        <video controls ref={setVideo} />
         <div>
             {messager ? <>
                 <button onClick={() => {

@@ -25,6 +25,10 @@ class EventBus {
     once(type: string, callback: (ev: any) => void) {
         return this.on(type, callback, 1)
     }
+    off(...types: string[]) {
+        const keep = this.listeners.filter(({ type }) => !types.includes(type))
+        this.listeners.splice(0, this.listeners.length, ...keep)
+    }
     emit(typeName: string, data: any) {
         this.listeners.forEach(item => {
             const { type, callback, limit } = item
@@ -44,8 +48,10 @@ class EventBus {
 export class Room {
     private readonly channel: BroadcastChannel
     private readonly users: string[]
+    private readonly eventBus: EventBus
     constructor(channel: string) {
         this.users = []
+        this.eventBus = new EventBus()
         this.channel = new BroadcastChannel(channel)
         this.channel.onmessage = ev => {
             const { data } = ev
@@ -56,7 +62,7 @@ export class Room {
             if (!sender || from !== 'user' || to !== 'room' || receiver !== this.getRoomName()) {
                 return
             }
-
+            this.eventBus.emit(`${sender}:${type}`, data)
             this.onRequest(data)
 
             switch (type) {
@@ -165,13 +171,13 @@ export class Room {
                     break
                 }
                 default: {
-                    this.send(this.createMessage({
-                        type: 'error',
-                        access: 'private',
-                        receiver: sender,
-                        message: `Unhandled signaling: ${type}`,
-                        data: { id, type, sender, message },
-                    }))
+                    // this.send(this.createMessage({
+                    //     type: 'error',
+                    //     access: 'private',
+                    //     receiver: sender,
+                    //     message: `Unhandled signaling: ${type}`,
+                    //     data: { id, type, sender, message },
+                    // }))
                     break
                 }
             }
@@ -186,7 +192,7 @@ export class Room {
         receiver: string;
     }) & {
         type: string;
-        message: string;
+        message?: string;
         data?: any;
     }) {
         const {
@@ -248,6 +254,59 @@ export class Room {
     }
     getRoomName() {
         return this.channel.name
+    }
+
+    broadcast(stream: MediaStream) {
+        this.getUserList().forEach(user => {
+
+            const peer = new RTCPeerConnection()
+            stream.getTracks().forEach(track => {
+                peer.addTrack(track, stream)
+            })
+            peer.onicecandidate = e => {
+                const data: any = {
+                    type: 'candidate',
+                };
+                if (e.candidate) {
+                    data.candidate = e.candidate.candidate || undefined
+                    data.sdpMid = e.candidate.sdpMid
+                    data.sdpMLineIndex = e.candidate.sdpMLineIndex
+                } else {
+                    data.sdpMLineIndex = 0
+                }
+                this.send(this.createMessage({
+                    access: 'private',
+                    type: 'candidate',
+                    receiver: user.id,
+                    data,
+                }))
+            }
+
+            this.eventBus.once(`${user.id}:${`broadcast`}`, async () => {
+                const offer = await peer.createOffer()
+                await peer.setLocalDescription(offer)
+                this.send(this.createMessage({
+                    access: 'private',
+                    type: 'offer',
+                    receiver: user.id,
+                    data: { sdp: offer.sdp }
+                }))
+            })
+
+            this.eventBus.once(`${user.id}:${`answer`}`, async ({ data }) => {
+                const { sdp } = data
+                await peer.setRemoteDescription({ type: 'answer', sdp })
+
+                console.log(peer)
+            })
+
+            this.send(this.createMessage({
+                access: 'private',
+                type: 'broadcast',
+                receiver: user.id,
+            }))
+        })
+
     }
 
 }
@@ -318,8 +377,13 @@ export class Messager {
         }
     }
     onMessage(msg: any) { }
-    onExit(msg: any) { }
-    send(type: string, message: any = '') {
+    on(type: string, callback: (data: any) => void) {
+        this.eventBus.on(type, callback)
+    }
+    once(type: string, callback: (data: any) => void) {
+        this.eventBus.once(type, callback)
+    }
+    send(type: string, message: any = '', data: any = null) {
         if (!this.channel.onmessage) {
             return
         }
@@ -330,7 +394,8 @@ export class Messager {
             type,
             from: 'user', to: 'room',
             sender, receiver,
-            message
+            message,
+            data,
         }
         this.channel.postMessage(msg)
     }
@@ -364,5 +429,38 @@ export class Messager {
     }
     say(something: string) {
         this.send('say', something)
+    }
+    listenBroadcast(callback: (stream: MediaStream) => void) {
+        this.once('broadcast', () => {
+            const peer = new RTCPeerConnection()
+
+            this.on('candidate', async ({ data }) => {
+                const { candidate, sdpMLineIndex, sdpMid } = data
+                await peer.addIceCandidate({ candidate, sdpMLineIndex, sdpMid })
+                if(sdpMLineIndex === 0 && typeof sdpMid === 'undefined') {
+                    this.eventBus.off('candidate')
+                }
+            })
+            this.once('offer', async ({ data }) => {
+                const { sdp } = data
+                await peer.setRemoteDescription({ type: 'offer', sdp })
+                const answer = await peer.createAnswer()
+                await peer.setLocalDescription(answer)
+                this.send('answer', '', { sdp: answer.sdp })
+            })
+
+            peer.ontrack = ev => {
+                let str: MediaStream
+                if (Array.isArray(ev.streams) && ev.streams.length > 0) {
+                    str = ev.streams[0]
+                } else {
+                    const stream = new MediaStream()
+                    stream.addTrack(ev.track)
+                    str = stream
+                }
+                typeof callback === 'function' && callback(str)
+            }
+            this.send('broadcast')
+        })
     }
 }
