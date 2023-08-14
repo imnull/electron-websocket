@@ -50,6 +50,12 @@ export abstract class MessageResolver<M = any> extends IdObject {
         }
         this.bus.on(type, callback)
     }
+    once(type: string, callback: (data: any) => void) {
+        if (MessageResolver.IsInvalidMessageName(type)) {
+            throw `The event name "${type}" can not be use.`
+        }
+        this.bus.on(type, callback)
+    }
 
     destroy() {
         this.channel.close()

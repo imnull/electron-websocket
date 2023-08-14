@@ -9,7 +9,6 @@ export type TMessage = {
     };
     'call-media': {
         server: string;
-        track: 'track' | 'sub-track';
     };
     'request-media': {
         track: 'track' | 'sub-track';
@@ -45,6 +44,19 @@ export default class MessageUser extends Passager<TMessage[keyof TMessage], keyo
     on(type: 'sub-track', callback: (stream: MediaStream) => void): void;
     on(type: keyof TMessage, callback: (msg: any) => void) {
         return super.on(type, callback)
+    }
+
+    once(type: 'create', callback: (msg: TMessage['create']) => void): void;
+    once(type: 'connect', callback: (msg: TMessage['connect']) => void): void;
+    once(type: 'call-media', callback: (msg: TMessage['call-media']) => void): void;
+    once(type: 'reply-media', callback: (msg: TMessage['reply-media']) => void): void;
+    once(type: 'offer', callback: (msg: TMessage['offer']) => void): void;
+    once(type: 'answer', callback: (msg: TMessage['answer']) => void): void;
+    once(type: 'candidate', callback: (msg: TMessage['candidate']) => void): void;
+    once(type: 'track', callback: (stream: MediaStream) => void): void;
+    once(type: 'sub-track', callback: (stream: MediaStream) => void): void;
+    once(type: keyof TMessage, callback: (msg: any) => void) {
+        return super.once(type, callback)
     }
 
     sendToAll(type: 'create', msg: TMessage['create']): void;
