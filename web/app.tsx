@@ -27,7 +27,7 @@ export default () => {
 
 
         const room = new Room('abc')
-        room.on('join', msg => {
+        room.on('connect', msg => {
             console.log(22222, msg)
         })
         room.create()
@@ -38,21 +38,21 @@ export default () => {
         }, 1000)
 
 
-        navigator.mediaDevices.getUserMedia({ video: true, audio: false }).then(stream => {
+        // navigator.mediaDevices.getUserMedia({ video: true, audio: false }).then(stream => {
 
-            localVideo.srcObject = stream
+        //     localVideo.srcObject = stream
 
-            const room = new Room('abc')
-            room.on('join', msg => {
-                console.log(22222, msg)
-            })
-            room.create()
+        //     const room = new Room('abc')
+        //     room.on('connect', msg => {
+        //         console.log(22222, msg)
+        //     })
+        //     room.create()
 
-            setTimeout(() => {
-                console.log(room)
-                room.broadcast(stream, 'sub-track')
-            }, 1000)
-        })
+        //     setTimeout(() => {
+        //         console.log(room)
+        //         room.broadcast(stream, 'sub-track')
+        //     }, 1000)
+        // })
 
     }, [canvas, localVideo])
 
@@ -62,7 +62,7 @@ export default () => {
         }
         const client = new Client(channel)
         client.on('create', ({ user }) => {
-            client.join(user)
+            client.connect(user)
         })
         client.on('track', stream => {
             mainVideo.srcObject = stream

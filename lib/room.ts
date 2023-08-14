@@ -69,7 +69,7 @@ export class Room extends MessageUser {
         this.streams = []
         this.users = []
 
-        this.on('join', ({ user }) => {
+        this.on('connect', ({ user }) => {
             this.users.push(user)
         })
     }
@@ -136,12 +136,6 @@ class LiveMediaStreamClient extends MessageUser {
 
         this.pc = pc
     }
-
-    onTrack(stream: MediaStream) { }
-
-    getServerId() {
-        return this.server
-    }
 }
 
 export class Client extends MessageUser {
@@ -165,7 +159,7 @@ export class Client extends MessageUser {
             })
         })
     }
-    join(user: string) {
-        this.sendTo(user, 'join', { user: this.getId() })
+    connect(user: string) {
+        this.sendTo(user, 'connect', { user: this.getId() })
     }
 }

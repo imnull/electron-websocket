@@ -4,7 +4,7 @@ export type TMessage = {
     'create': {
         user: string;
     };
-    'join': {
+    'connect': {
         user: string;
     };
     'call-media': {
@@ -35,7 +35,7 @@ export type TMessage = {
 export default class MessageUser extends Passager<TMessage[keyof TMessage], keyof TMessage> {
 
     on(type: 'create', callback: (msg: TMessage['create']) => void): void;
-    on(type: 'join', callback: (msg: TMessage['join']) => void): void;
+    on(type: 'connect', callback: (msg: TMessage['connect']) => void): void;
     on(type: 'call-media', callback: (msg: TMessage['call-media']) => void): void;
     on(type: 'reply-media', callback: (msg: TMessage['reply-media']) => void): void;
     on(type: 'offer', callback: (msg: TMessage['offer']) => void): void;
@@ -43,7 +43,7 @@ export default class MessageUser extends Passager<TMessage[keyof TMessage], keyo
     on(type: 'candidate', callback: (msg: TMessage['candidate']) => void): void;
     on(type: 'track', callback: (stream: MediaStream) => void): void;
     on(type: 'sub-track', callback: (stream: MediaStream) => void): void;
-    on(type: string, callback: (msg: any) => void) {
+    on(type: keyof TMessage, callback: (msg: any) => void) {
         return super.on(type, callback)
     }
 
@@ -52,13 +52,13 @@ export default class MessageUser extends Passager<TMessage[keyof TMessage], keyo
         return super.sendToAll(type, data, exclude)
     }
 
-    sendTo(receiver: string, type: 'join', msg: TMessage['join']): void;
+    sendTo(receiver: string, type: 'connect', msg: TMessage['connect']): void;
     sendTo(receiver: string, type: 'call-media', msg: TMessage['call-media']): void;
     sendTo(receiver: string, type: 'reply-media', msg: TMessage['reply-media']): void;
     sendTo(receiver: string, type: 'candidate', msg: TMessage['candidate']): void;
     sendTo(receiver: string, type: 'offer', msg: TMessage['offer']): void;
     sendTo(receiver: string, type: 'answer', msg: TMessage['answer']): void;
-    sendTo(receiver: string, type: keyof TMessage, data: any): void {
+    sendTo(receiver: keyof TMessage, type: keyof TMessage, data: any): void {
         return super.sendTo(receiver, type, data)
     }
 }
